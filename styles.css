@@ -132,6 +132,13 @@ button {
   box-shadow: 0 0 28px rgba(255, 40, 86, 0.28);
 }
 
+#dangerText.success {
+  background: rgba(106, 79, 16, 0.86);
+  border-color: rgba(255, 222, 136, 0.66);
+  color: #fff6da;
+  box-shadow: 0 0 30px rgba(255, 206, 93, 0.28);
+}
+
 #damageFlash {
   position: fixed;
   inset: 0;
@@ -142,6 +149,18 @@ button {
 
 #damageFlash.active {
   background: rgba(255, 22, 70, 0.24);
+}
+
+#successFlash {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 220, 120, 0);
+  transition: background 360ms ease;
+}
+
+#successFlash.active {
+  background: rgba(255, 220, 120, 0.2);
 }
 
 #status {

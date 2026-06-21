@@ -6,6 +6,7 @@ const objectiveEl = document.querySelector("#objective");
 const viewModeEl = document.querySelector("#viewMode");
 const dangerTextEl = document.querySelector("#dangerText");
 const damageFlashEl = document.querySelector("#damageFlash");
+const successFlashEl = document.querySelector("#successFlash");
 const stageStatEl = document.querySelector("#stageStat");
 const giStatEl = document.querySelector("#giStat");
 const relicStatEl = document.querySelector("#relicStat");
@@ -44,6 +45,7 @@ const obstacles = [];
 const hazards = [];
 const bridgePlatforms = [];
 const bridgeObjects = [];
+const bridgeBursts = [];
 const spawnPoint = new THREE.Vector3(0, 0.82, 2.75);
 const bridgeCenterX = 13;
 const bridgeStartPoint = new THREE.Vector3(bridgeCenterX, 0.82, 2.75);
@@ -67,6 +69,7 @@ const state = {
   maxStage: 3,
   stageCleared: false,
   bridgeMode: false,
+  bridgeCompleteTimer: 0,
   activatedCount: 0,
   deaths: 0,
   respawnTimer: 0,
@@ -1013,6 +1016,7 @@ function failBridge() {
   state.deaths += 1;
   state.respawnTimer = 0.45;
   dangerTextEl.textContent = `빛의 다리에서 떨어졌습니다 - 재시작 ${state.deaths}`;
+  dangerTextEl.classList.remove("success");
   dangerTextEl.classList.remove("hidden");
   damageFlashEl.classList.add("active");
   setGuide("발판 밖으로 떨어졌습니다. 시작 발판에서 다시 점프해 건너세요.", 4);
@@ -1095,6 +1099,7 @@ function updateHazards(dt) {
     state.respawnTimer -= dt;
     if (state.respawnTimer <= 0) {
       dangerTextEl.classList.add("hidden");
+      dangerTextEl.classList.remove("success");
       damageFlashEl.classList.remove("active");
     }
   }
@@ -1102,13 +1107,38 @@ function updateHazards(dt) {
 
 function updateStageProgress(dt) {
   if (!state.bridgeMode) return;
-  if (player.position.distanceTo(bridgeGatePoint) < 0.85) {
-    advanceStage();
+  if (state.bridgeCompleteTimer > 0) {
+    state.bridgeCompleteTimer = Math.max(0, state.bridgeCompleteTimer - dt);
+    if (state.bridgeCompleteTimer === 0) {
+      advanceStage();
+    }
+    return;
   }
+  if (player.position.distanceTo(bridgeGatePoint) < 0.85) {
+    completeBridge();
+  }
+}
+
+function completeBridge() {
+  state.bridgeCompleteTimer = 0.55;
+  state.velocityY = 0;
+  state.grounded = true;
+  promptEl.textContent = "다리 통과! 빛이 다음 방을 열고 있습니다.";
+  dangerTextEl.textContent = "통곡의 다리 통과";
+  dangerTextEl.classList.add("success");
+  dangerTextEl.classList.remove("hidden");
+  damageFlashEl.classList.remove("active");
+  successFlashEl.classList.add("active");
+  setTimeout(() => successFlashEl.classList.remove("active"), 360);
+  spawnBridgeBurst(bridgeGatePoint);
+  playTone(660, 0.08, "sine", 0.035);
+  playTone(880, 0.1, "sine", 0.035, 0.08);
+  playTone(1180, 0.14, "triangle", 0.025, 0.16);
 }
 
 function startBridgeMode() {
   state.bridgeMode = true;
+  state.bridgeCompleteTimer = 0;
   applyBridgeDifficulty();
   setBridgeVisible(true);
   resetAllRelics();
@@ -1118,6 +1148,7 @@ function startBridgeMode() {
   state.velocityY = 0;
   state.grounded = true;
   dangerTextEl.textContent = `통곡의 다리 - Space로 발판을 건너세요`;
+  dangerTextEl.classList.remove("success");
   dangerTextEl.classList.remove("hidden");
   damageFlashEl.classList.remove("active");
   setGuide(state.stage >= 2
@@ -1142,7 +1173,9 @@ function advanceStage() {
   state.velocityY = 0;
   state.grounded = true;
   dangerTextEl.classList.add("hidden");
+  dangerTextEl.classList.remove("success");
   damageFlashEl.classList.remove("active");
+  successFlashEl.classList.remove("active");
   setGuide(`Stage ${state.stage} 시작! 다시 붉은 함정을 피해 흰 별 기둥을 켜세요.`, 6);
   playTone(660, 0.09, "triangle", 0.04);
   playTone(990, 0.12, "triangle", 0.03, 0.08);
@@ -1153,6 +1186,7 @@ function resetBridgeAttempt() {
   player.position.copy(bridgeStartPoint);
   state.velocityY = 0;
   state.grounded = true;
+  state.bridgeCompleteTimer = 0;
   damageFlashEl.classList.add("active");
   setTimeout(() => damageFlashEl.classList.remove("active"), 260);
 }
@@ -1169,6 +1203,7 @@ function triggerDeath() {
   state.deaths += 1;
   state.respawnTimer = 0.9;
   dangerTextEl.textContent = `Stage ${state.stage} 실패 - 재시작 ${state.deaths}`;
+  dangerTextEl.classList.remove("success");
   dangerTextEl.classList.remove("hidden");
   damageFlashEl.classList.add("active");
   setGuide("함정에 닿았습니다. 유물 배치가 초기화되었으니 다시 GI 장치부터 진행하세요.", 5);
@@ -1328,6 +1363,66 @@ function playTone(frequency, duration, type = "sine", gain = 0.03, delay = 0) {
   oscillator.stop(start + duration + 0.03);
 }
 
+function spawnBridgeBurst(origin) {
+  const group = new THREE.Group();
+  group.position.copy(origin).add(new THREE.Vector3(0, 0.35, 0));
+  group.userData.life = 0;
+  group.userData.duration = 0.62;
+
+  const glow = new THREE.PointLight(0xffdf8a, 1.7, 4.5, 2);
+  glow.userData.baseIntensity = glow.intensity;
+  group.add(glow);
+
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffdf8a,
+    transparent: true,
+    opacity: 0.9,
+  });
+  const geometry = new THREE.SphereGeometry(0.055, 10, 8);
+
+  for (let i = 0; i < 18; i += 1) {
+    const particle = new THREE.Mesh(geometry, material.clone());
+    const angle = (i / 18) * Math.PI * 2;
+    const lift = 0.45 + (i % 4) * 0.08;
+    particle.userData.velocity = new THREE.Vector3(
+      Math.cos(angle) * (0.9 + (i % 3) * 0.18),
+      lift,
+      Math.sin(angle) * (0.9 + ((i + 1) % 3) * 0.18),
+    );
+    group.add(particle);
+  }
+
+  scene.add(group);
+  bridgeBursts.push(group);
+}
+
+function updateBridgeBursts(dt) {
+  for (let i = bridgeBursts.length - 1; i >= 0; i -= 1) {
+    const burst = bridgeBursts[i];
+    burst.userData.life += dt;
+    const t = burst.userData.life / burst.userData.duration;
+    const fade = Math.max(0, 1 - t);
+
+    for (const child of burst.children) {
+      if (child.isPointLight) {
+        child.intensity = child.userData.baseIntensity * fade;
+      } else {
+        child.position.addScaledVector(child.userData.velocity, dt);
+        child.material.opacity = 0.9 * fade;
+      }
+    }
+
+    if (t >= 1) {
+      scene.remove(burst);
+      for (const child of burst.children) {
+        child.geometry?.dispose();
+        child.material?.dispose();
+      }
+      bridgeBursts.splice(i, 1);
+    }
+  }
+}
+
 function animate() {
   const dt = Math.min(clock.getDelta(), 0.04);
   movePlayer(dt);
@@ -1345,6 +1440,7 @@ function animate() {
     giSwitch.userData.halo.rotation.z += dt * 1.8;
     giSwitch.userData.pointer.position.y = 2.35 + Math.sin(clock.elapsedTime * 3.2) * 0.12;
   }
+  updateBridgeBursts(dt);
   updateGI();
   updatePrompt();
   renderer.render(scene, camera);

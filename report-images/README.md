@@ -27,4 +27,3 @@
 - `22-ddgi-detail.png`: DDGI 상세/probe 화면
 - `23-capture-mode.png`: HUD 숨김 캡쳐 예시
 - `24-web-run.png`: 웹 실행 화면
-- `25-submit-links.png`: 제출 링크 확인 화면
