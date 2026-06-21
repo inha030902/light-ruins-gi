@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>빛의 잔향</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="game"></canvas>
+      <div id="hud">
+        <div class="topbar">
+          <div>
+            <strong>빛의 잔향</strong>
+            <span id="viewMode">3인칭</span>
+          </div>
+          <div id="objective">유물 0/3 - 중앙 제단을 복원하세요</div>
+        </div>
+        <div id="statsPanel">
+          <span id="stageStat">Stage 1/3</span>
+          <span id="giStat">GI OFF</span>
+          <span id="relicStat">Relics 0/3</span>
+          <span id="deathStat">Deaths 0</span>
+        </div>
+        <div id="centerDot"></div>
+        <div id="prompt">화면을 클릭해서 시작</div>
+        <div id="dangerText" class="hidden">빛 함정에 닿았습니다</div>
+        <div id="status">
+          <span>WASD 이동</span>
+          <span>마우스 시점</span>
+          <span>Space 점프</span>
+          <span>E 상호작용</span>
+          <span>V 시점 전환</span>
+          <span>E GI 장치</span>
+          <span>P Probe</span>
+          <span>H HUD</span>
+        </div>
+      </div>
+      <div id="damageFlash"></div>
+      <div id="intro" class="overlay">
+        <h1>빛의 잔향</h1>
+        <p>먼저 붉은 빛 함정을 피해 안쪽의 흰 별 기둥을 찾고, E로 GI 장치를 켜세요.</p>
+        <button id="startButton">시작</button>
+      </div>
+      <div id="ending" class="overlay hidden">
+        <h1>유적 복원 완료</h1>
+        <p>간접광의 잔향이 잠들어 있던 문을 열었습니다.</p>
+        <button id="restartButton">다시 탐험</button>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
